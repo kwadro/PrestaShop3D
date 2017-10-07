@@ -1,0 +1,124 @@
+<?php
+/**
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    Cappasity Inc <info@cappasity.com>
+ * @copyright 2014-2017 Cappasity Inc.
+ * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
+ */
+
+/**
+ * Class CappasityModelFile
+ */
+class CappasityModelFile
+{
+    /**
+     * @var string
+     */
+    protected $id;
+
+    /**
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * @var string
+     */
+    protected $alias;
+
+    /**
+     * @var array
+     */
+    protected $params;
+
+    /**
+     * Player constructor.
+     * @param $id
+     * @param $name
+     * @param $alias
+     * @param array $params
+     */
+    public function __construct($id, $name, $alias, array $params)
+    {
+        $this->id = $id;
+        $this->name = $name;
+        $this->alias = $alias;
+        $this->params = $params;
+    }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAlias()
+    {
+        return $this->alias;
+    }
+
+    /**
+     * @param bool $disableAutoRun
+     * @return string
+     */
+    public function getEmbed($disableAutoRun = false)
+    {
+        $query = http_build_query(array(
+            'autorun' => $disableAutoRun ? 0 : $this->params['autorun'],
+            'closebutton' => $this->params['closebutton'],
+            'hidecontrols' => $this->params['hidecontrols'],
+            'logo' => $this->params['logo'],
+            'hidefullscreen' => $this->params['hidefullscreen'],
+        ));
+
+        return '<iframe allowfullscreen mozallowfullscreen="true"'
+            . '         webkitallowfullscreen="true" '
+            . "         width=\"{$this->params['width']}\" "
+            . "         height=\"{$this->params['height']}\" "
+            . "         frameborder=\"0\" "
+            . "         style=\"border:0;\" "
+            . "         onmousewheel=\"\" "
+            . "         src=\"https://api.cappasity.com/api/player/{$this->id}/embedded?{$query}\" >"
+            . " </iframe>";
+    }
+
+    /**
+     * @param array $data
+     * @param array $params
+     * @return array
+     */
+    public static function getCollection(array $data, array $params)
+    {
+        $collection = array();
+
+        foreach ($data as $modelData) {
+            $id = $modelData['id'];
+            $name = $modelData['attributes']['name'];
+            $alias = array_key_exists('alias', $modelData['attributes']) ? $modelData['attributes']['alias'] : '';
+
+            $collection[] = new CappasityModelFile($id, $name, $alias, $params);
+        }
+
+        return $collection;
+    }
+}
