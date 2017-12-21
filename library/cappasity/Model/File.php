@@ -83,13 +83,13 @@ class CappasityModelFile
      */
     public function getEmbed($disableAutoRun = false)
     {
-        $query = http_build_query(array(
-            'autorun' => $disableAutoRun ? 0 : $this->params['autorun'],
-            'closebutton' => $this->params['closebutton'],
-            'hidecontrols' => $this->params['hidecontrols'],
-            'logo' => $this->params['logo'],
-            'hidefullscreen' => $this->params['hidefullscreen'],
-        ));
+        $params = $this->params;
+
+        if ($disableAutoRun) {
+            $params['autorun'] = 0;
+        }
+
+        $query = http_build_query($params);
 
         return '<iframe allowfullscreen mozallowfullscreen="true"'
             . '         webkitallowfullscreen="true" '

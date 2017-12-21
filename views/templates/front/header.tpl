@@ -50,33 +50,37 @@
       $('#views_block').removeClass('hidden');
 
       var oldDisplayImage = window.displayImage;
-      var $bigPic = $('#bigpic');
-      var $viewFullSize = $('#view_full_size');
+      var $viewFullSize = $('#view_full_size').eq(0);
       var $largePic = $viewFullSize.find('.span_link.no-print').eq(0);
+      var hasBigPic = $('#bigpic, #view_full_size .jqzoom').eq(0).length;
 
-      if (oldDisplayImage && $bigPic && $viewFullSize) {
+      if (oldDisplayImage && $viewFullSize.length && hasBigPic) {
 
         window.displayImage = function displayImage($el) {
           var args = [].slice.call(arguments);
           var isCappasity = $el && $el.attr('id') === cappasityLinkId;
-          $iframe.attr('width', $bigPic.attr('width'));
-          $iframe.attr('height', $bigPic.attr('height'));
+          var $bigPic = $('#bigpic, #view_full_size .zoomPad').eq(0);
 
-          if (isCappasity) {
-            requestAnimationFrame(function () {
-              $bigPic.hide();
-              $largePic.hide();
-              if (!$viewFullSize.find('#' + embedId).length) {
-                $viewFullSize.append($embed);
-              }
-              $embed.css({ display: 'block' });
-            });
-          } else {
-            requestAnimationFrame(function () {
-              $embed.css({ display: 'none' });
-              $bigPic.show();
-              $largePic.show();
-            });
+          if ($bigPic.length) {
+            $iframe.attr('width', $bigPic.css('width'));
+            $iframe.attr('height', $bigPic.css('height'));
+
+            if (isCappasity) {
+              requestAnimationFrame(function () {
+                $bigPic.hide();
+                $largePic.hide();
+                if (!$viewFullSize.find('#' + embedId).length) {
+                  $viewFullSize.append($embed);
+                }
+                $embed.css({ display: 'block' });
+              });
+            } else {
+              requestAnimationFrame(function () {
+                $embed.css({ display: 'none' });
+                $bigPic.show();
+                $largePic.show();
+              });
+            }
           }
 
           oldDisplayImage.apply(window, args);
@@ -86,7 +90,7 @@
       refreshProductImages(0);
       $thumbContainer.trigger('goto', 0);
       displayImage($cappasityLink);
-    } else if ($imageBlock) {
+    } else if ($imageBlock.length) {
       $imageBlock.empty().append($embed);
     }
   });

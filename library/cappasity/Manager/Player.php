@@ -26,7 +26,38 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
     /**
      * @var array
      */
+    protected $fieldssets = array(
+      array(
+          'title' => 'Player options',
+          'items' => array('autorun', 'closebutton', 'logo'),
+      ),
+      array(
+          'title' => 'Rotate options',
+          'items' => array(
+              'autorotate',
+              'autorotatetime',
+              'autorotatedelay',
+              'autorotatedir',
+              'hidefullscreen',
+              'hideautorotateopt',
+              'hidesettingsbtn',
+          ),
+      ),
+      array(
+          'title' => 'Zoom options',
+          'items' => array('enableimagezoom', 'zoomquality', 'hidezoomopt'),
+      ),
+      array(
+          'title' => 'Window options',
+          'items' => array('width', 'height'),
+      ),
+    );
+
+    /**
+     * @var array
+     */
     protected $settings = array(
+        // core options
         'autorun' => array(
             'type' => 'boolean',
             'default' => 1,
@@ -43,14 +74,6 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
             'name' => 'cappasityPlayerClosebutton',
             'enabled' => true,
         ),
-        'hidecontrols' => array(
-            'type' => 'boolean',
-            'default' => 0,
-            'paid' => true,
-            'description' => 'Hide player controls',
-            'name' => 'cappasityPlayerHideControls',
-            'enabled' => true,
-        ),
         'logo' => array(
             'type' => 'boolean',
             'default' => 1,
@@ -59,14 +82,113 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
             'name' => 'cappasityPlayerLogo',
             'enabled' => true,
         ),
+        // rotate options
+        'autorotate' => array(
+            'type' => 'boolean',
+            'default' => 0,
+            'paid' => true,
+            'description' => 'Autorotate',
+            'name' => 'cappasityPlayerAutoRotate',
+            'enabled' => true,
+        ),
+        'autorotatetime' => array(
+            'type' => 'string',
+            'default' => 10,
+            'paid' => true,
+            'description' => 'Autorotate time, seconds',
+            'name' => 'cappasityPlayerAutoRotateTime',
+            'enabled' => true,
+            'validation' => array(
+                'method' => 'isFloat',
+                'params' => array(
+                  'mix' => 2,
+                  'max' => 60,
+                ),
+                'error' => 'Value must be float, min 2, max 60',
+            ),
+        ),
+        'autorotatedelay' => array(
+            'type' => 'string',
+            'default' => 2,
+            'paid' => true,
+            'description' => 'Autorotate delay, seconds',
+            'name' => 'cappasityPlayerAutoRotateDelay',
+            'enabled' => true,
+            'validation' => array(
+                'method' => 'isFloat',
+                'params' => array(
+                    'mix' => 1,
+                    'max' => 10,
+                ),
+                'error' => 'Value must be float, min 1, max 10',
+            ),
+        ),
+        'autorotatedir' => array(
+            'type' => 'select',
+            'values' => array(
+                'clockwise' => 1,
+                'counter-clockwise' => -1,
+            ),
+            'default' => 1,
+            'paid' => true,
+            'description' => 'Autorotate direction',
+            'name' => 'cappasityPlayerAutoRotateDirection',
+            'enabled' => true,
+        ),
         'hidefullscreen' => array(
             'type' => 'boolean',
             'default' => 1,
             'paid' => true,
             'description' => 'Hide fullscreen button',
             'name' => 'cappasityPlayerHideFullScreen',
-            'enabled' => false,
+            'enabled' => true,
         ),
+        'hideautorotateopt' => array(
+            'type' => 'boolean',
+            'default' => 1,
+            'paid' => true,
+            'description' => 'Hide autorotate button',
+            'name' => 'cappasityPlayerHideRotate',
+            'enabled' => true,
+        ),
+        'hidesettingsbtn' => array(
+            'type' => 'boolean',
+            'default' => 0,
+            'paid' => true,
+            'description' => 'Hide settings button',
+            'name' => 'cappasityPlayerHideSettings',
+            'enabled' => true,
+        ),
+        // zoom options
+        'enableimagezoom' => array(
+            'type' => 'boolean',
+            'default' => 1,
+            'paid' => true,
+            'description' => 'Enable zoom',
+            'name' => 'cappasityPlayerEnableImageZoom',
+            'enabled' => true,
+        ),
+        'zoomquality' => array(
+            'type' => 'select',
+            'values' => array(
+                'SD' => 1,
+                'HD' => 2,
+            ),
+            'default' => 1,
+            'paid' => true,
+            'description' => 'Zoom quality',
+            'name' => 'cappasityPlayerZoomQuality',
+            'enabled' => true,
+        ),
+        'hidezoomopt' => array(
+            'type' => 'boolean',
+            'default' => 0,
+            'paid' => true,
+            'description' => 'Hide zoom button',
+            'name' => 'cappasityPlayerHideZoomOpt',
+            'enabled' => true,
+        ),
+        // window options
         'width' => array(
             'type' => 'string',
             'default' => '100%',
@@ -157,8 +279,11 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
 
             if (array_key_exists('validation', $setting) === true) {
                 $validationOptions = $setting['validation'];
+                $validationParams = array_key_exists('params', $validationOptions)
+                  ? $validationOptions['params']
+                  : array();
 
-                if ($this->{$validationOptions['method']}($value) === false) {
+                if ($this->{$validationOptions['method']}($value, $validationParams) === false) {
                     throw new CappasityManagerPlayerExceptionsValidation(
                         $validationOptions['error']
                     );
@@ -176,72 +301,113 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
      */
     public function renderSettingsForm(HelperForm $helper, $isAccountPaid)
     {
-        $settings = $this->getEnabledSettings();
-        $params = $isAccountPaid
-            ? $settings
-            : array_filter($settings, function ($value) {
+        $settings = $isAccountPaid
+            ? $this->getEnabledSettings()
+            : array_filter($this->getEnabledSettings(), function ($value) {
                 return $value['paid'] !== true;
             });
-        $values = array();
-        $input = array();
+        $from = array();
 
-        foreach ($params as $param) {
-            $name = $param['name'];
-            $values[$name] = $this->getSetting($name, $param['default']);
+        // generate form fieldssets
+        foreach ($this->fieldssets as $set) {
+            $inputs = array();
 
-            switch ($param['type']) {
-                case 'boolean':
-                    $input[] = array(
-                        'type' => 'select',
-                        'label' => $this->module->l($param['description']),
-                        'name' => $name,
-                        'required' => true,
-                        'options' => array(
-                            'query' => array(
-                                array(
-                                    'id_option' => 0,
-                                    'name' => 'no',
-                                ),
-                                array(
-                                    'id_option' => 1,
-                                    'name' => 'yes',
-                                )
-                            ),
-                            'id' => 'id_option',
-                            'name' => 'name',
-                        ),
-                    );
-                    break;
-                case 'string':
-                    $input[] = array(
-                        'type' => 'text',
-                        'label' => $this->module->l($param['description']),
-                        'name' => $name,
-                        'required' => true,
-                    );
-                    break;
+            foreach ($set['items'] as $field) {
+                if (array_key_exists($field, $settings) === true) {
+                    $params = $settings[$field];
+                    $inputs[] = $this->getFormField($params);
+                    $helper->fields_value[$params['name']] = $this->getSetting($params['name'], $params['default']);
+                }
+            }
+
+            if (count($inputs) !== 0) {
+                $from[] = $this->getFormFieldSet($set, $inputs);
             }
         }
 
-        $helper->fields_value = $values;
+        return $helper->generateForm($from);
+    }
 
-        return $helper->generateForm(
-            array(
-                array(
-                    'form' => array(
-                        'legend' => array(
-                            'title' => $this->module->l('Player settings'),
-                            'icon' => 'icon-cogs',
-                        ),
-                        'description' => $this->module->l('3D player settings'),
-                        'input' => $input,
-                        'submit' => array(
-                            'title' => $this->module->l('Save'),
-                        ),
-                    ),
+    /**
+     * @return array
+     */
+    protected function getFormFieldSet($set, $inputs)
+    {
+        return array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->module->l($set['title']),
+                    'icon' => 'icon-cogs',
                 ),
-            )
+                'input' => $inputs,
+                'submit' => array(
+                    'title' => $this->module->l('Save'),
+                ),
+            ),
         );
+    }
+
+    /**
+     * @return array
+     */
+    protected function getFormField($params)
+    {
+        if ($params['type'] === 'boolean') {
+            return array(
+                'type' => 'select',
+                'label' => $this->module->l($params['description']),
+                'name' => $params['name'],
+                'required' => true,
+                'options' => array(
+                    'query' => array(
+                        array(
+                            'id_option' => 0,
+                            'name' => 'no',
+                        ),
+                        array(
+                            'id_option' => 1,
+                            'name' => 'yes',
+                        )
+                    ),
+                    'id' => 'id_option',
+                    'name' => 'name',
+                ),
+            );
+        }
+
+        if ($params['type'] === 'string') {
+            return array(
+                'type' => 'text',
+                'label' => $this->module->l($params['description']),
+                'name' => $params['name'],
+                'required' => true,
+            );
+        }
+
+        if ($params['type'] === 'select') {
+            $query = array();
+
+            foreach ($params['values'] as $name => $value) {
+                $query[] = array(
+                    'id_option' => $value,
+                    'name' => $name,
+                );
+            }
+
+            return array(
+                'type' => 'select',
+                'label' => $this->module->l($params['description']),
+                'name' => $params['name'],
+                'required' => true,
+                'options' => array(
+                    'query' => $query,
+                    'id' => 'id_option',
+                    'name' => 'name',
+                ),
+            );
+        }
+
+        throw new Exception('Unknown field type');
     }
 
     /**
@@ -260,5 +426,27 @@ class CappasityManagerPlayer extends CappasityManagerAbstractManager
     protected function isSize($value)
     {
         return preg_match('/^\d+(px|%)$/m', $value) === 1;
+    }
+
+    /**
+     * @return boolean
+     */
+    protected function isFloat($value, $options)
+    {
+        if (is_numeric($value) === false) {
+            return false;
+        }
+
+        $float = (float)$value;
+
+        if (array_key_exists('min', $options) && $float <= $options['min']) {
+            return false;
+        }
+
+        if (array_key_exists('max', $options) && $float >= $options['max']) {
+            return false;
+        }
+
+        return true;
     }
 }

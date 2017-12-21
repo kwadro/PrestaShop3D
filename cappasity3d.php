@@ -61,7 +61,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.0.2';
+        $this->version = '1.0.4';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -189,7 +189,8 @@ class Cappasity3d extends Module
     protected function processPlayerSettings()
     {
         try {
-            $this->playerManager->updateSettings(Tools::getAllValues());
+            // use $_POST for v1.6.0.14
+            $this->playerManager->updateSettings($_POST);
         } catch (CappasityManagerPlayerExceptionsValidation $e) {
             return $this->displayError($e->getMessage());
         }
