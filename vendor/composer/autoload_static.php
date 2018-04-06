@@ -4,39 +4,37 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit30931ed9ae3968d0bc207cc0bcd830e2
+class ComposerStaticInit0c88b5ac1cb3383606989dd895193d39
 {
     public static $files = array (
-        'a0edc8309cc5e1d60e3047b5df6b7052' => __DIR__ . '/..' . '/guzzlehttp/psr7/src/functions_include.php',
-        'c964ee0ededf28c96ebd9db5099ef910' => __DIR__ . '/..' . '/guzzlehttp/promises/src/functions_include.php',
-        '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
+        'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'P' => 
+        'R' => 
         array (
-            'Psr\\Http\\Message\\' => 17,
+            'React\\Promise\\' => 14,
         ),
         'G' => 
         array (
-            'GuzzleHttp\\Psr7\\' => 16,
-            'GuzzleHttp\\Promise\\' => 19,
+            'GuzzleHttp\\Stream\\' => 18,
+            'GuzzleHttp\\Ring\\' => 16,
             'GuzzleHttp\\' => 11,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Psr\\Http\\Message\\' => 
+        'React\\Promise\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-message/src',
+            0 => __DIR__ . '/..' . '/react/promise/src',
         ),
-        'GuzzleHttp\\Psr7\\' => 
+        'GuzzleHttp\\Stream\\' => 
         array (
-            0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
+            0 => __DIR__ . '/..' . '/guzzlehttp/streams/src',
         ),
-        'GuzzleHttp\\Promise\\' => 
+        'GuzzleHttp\\Ring\\' => 
         array (
-            0 => __DIR__ . '/..' . '/guzzlehttp/promises/src',
+            0 => __DIR__ . '/..' . '/guzzlehttp/ringphp/src',
         ),
         'GuzzleHttp\\' => 
         array (
@@ -60,9 +58,9 @@ class ComposerStaticInit30931ed9ae3968d0bc207cc0bcd830e2
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit30931ed9ae3968d0bc207cc0bcd830e2::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit30931ed9ae3968d0bc207cc0bcd830e2::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit30931ed9ae3968d0bc207cc0bcd830e2::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit0c88b5ac1cb3383606989dd895193d39::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit0c88b5ac1cb3383606989dd895193d39::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit0c88b5ac1cb3383606989dd895193d39::$classMap;
 
         }, null, ClassLoader::class);
     }

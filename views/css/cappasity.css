@@ -1,0 +1,42 @@
+/*
+* NOTICE OF LICENSE
+*
+* This file is licenced under the Software License Agreement.
+* With the purchase or the installation of the software in your application
+* you accept the licence agreement.
+*
+* You must not modify, adapt or create derivative works of this source code
+*
+* @author    Cappasity Inc <info@cappasity.com>
+* @copyright 2014-2018 Cappasity Inc.
+* @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
+*/
+
+.fancybox-type-iframe .fancybox-nav {
+    top: 40%;
+    width: 10%;
+    height: 20%;
+}
+
+.pb-left-column #cappasity-embed-id {
+    position: relative;
+}
+
+.pb-left-column #cappasity-embed-id iframe {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.pb-left-column #cappasity-embed-id:before {
+    content: "";
+    float: left;
+    padding-bottom: 100%;
+}
+
+.pb-left-column #cappasity-embed-id:after {
+    content: "";
+    display: table;
+    clear: both;
+}

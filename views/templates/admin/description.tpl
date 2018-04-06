@@ -8,7 +8,7 @@
 * You must not modify, adapt or create derivative works of this source code
 *
 * @author    Cappasity Inc <info@cappasity.com>
-* @copyright 2014-2017 Cappasity Inc.
+* @copyright 2014-2018 Cappasity Inc.
 * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
 *}
 <h2>How to create</h2>

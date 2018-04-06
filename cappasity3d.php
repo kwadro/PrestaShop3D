@@ -9,7 +9,7 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2017 Cappasity Inc.
+ * @copyright 2014-2018 Cappasity Inc.
  * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
  */
 
@@ -32,16 +32,10 @@ if (!defined('_PS_VERSION_')) {
 class Cappasity3d extends Module
 {
     /**
-     * Actions for product extra
-     */
-    const ACTION_SHOW_PRODUCT_EXTRA = 'extra';
-    const ACTION_MODELS_LIST = 'list';
-
-    /**
      * Form fields
      */
-    const FORM_FIELD_CAPPASITY_ID = 'cappasityId';
     const FORM_FIELD_CAPPASITY_ACTION = 'cappasityAction';
+    const FORM_FIELD_CAPPASITY_ID = 'cappasityId';
     const FORM_FIELD_REFERENCE = 'reference';
     const FORM_FIELD_EAN13 = 'ean13';
     const FORM_FIELD_UPC = 'upc';
@@ -50,9 +44,11 @@ class Cappasity3d extends Module
      * Request params
      */
     const REQUEST_PARAM_PRODUCT_ID = 'id_product';
-    const REQUEST_PARAM_PAGE = 'page';
-    const REQUEST_PARAM_ACTION = 'subaction';
-    const REQUEST_PARAM_QUERY = 'query';
+
+    /**
+     *
+     */
+     const CACHE_KEY = 'cappasity::';
 
     /**
      * Cappasity3d constructor.
@@ -61,7 +57,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.0.4';
+        $this->version = '1.1.5';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -207,7 +203,9 @@ class Cappasity3d extends Module
         set_time_limit(0);
 
         $token = $this->accountManager->getToken();
-        $callback = Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . basename(_PS_ADMIN_DIR_) . '/'
+        $callback = $this->is17()
+          ? $this->context->link->getAdminLink('AdminCappasity3d', false)
+          : Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . basename(_PS_ADMIN_DIR_) . '/'
             . $this->context->link->getAdminLink('AdminCappasity3d', false);
 
         try {
@@ -224,10 +222,11 @@ class Cappasity3d extends Module
     /**
      *
      */
-    public function hookDisplayAdminProductsExtra()
+    public function hookDisplayAdminProductsExtra($params)
     {
-        $productId = (int)Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, 0);
-        $action = Tools::getValue(self::REQUEST_PARAM_ACTION, self::ACTION_SHOW_PRODUCT_EXTRA);
+        $productId = array_key_exists(self::REQUEST_PARAM_PRODUCT_ID, $params)
+            ? (int)$params[self::REQUEST_PARAM_PRODUCT_ID]
+            : (int)Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, 0);
         $token = $this->accountManager->getToken();
 
         if ($productId === 0) {
@@ -238,63 +237,14 @@ class Cappasity3d extends Module
             return $this->displayError($this->l('Set up your account in setting of module'));
         }
 
-        switch ($action) {
-            case self::ACTION_SHOW_PRODUCT_EXTRA:
-                return $this->productExtra();
-            case self::ACTION_MODELS_LIST:
-                return $this->modelsList();
-        }
-
-        return '';
-    }
-
-    /**
-     * @return string
-     */
-    public function modelsList()
-    {
-        $token = $this->accountManager->getToken();
-        $alias = $this->accountManager->getAlias();
-        $page = (int)Tools::getValue(self::REQUEST_PARAM_PAGE, 1);
-        $query = Tools::getValue(self::REQUEST_PARAM_QUERY, '');
-        $productId = (int)Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, 0);
-
-        try {
-            $filesCollection = $this->fileManager->files($token, $query, $page, 12);
-        } catch (Exception $e) {
-            return $this->displayError($this->l('Please renew your account settings'));
-        }
-
-        $this->context->smarty->assign(
-            array(
-                'productId' => $productId,
-                'action' => $this->context->link->getAdminLink('AdminProducts', true),
-                'files' => CappasityModelFile::getCollection(
-                    $filesCollection['data'],
-                    $this->playerManager->getSettings()
-                ),
-                'pagination' => $filesCollection['meta'],
-                'alias' => $alias,
-                'query' => $query,
-            )
-        );
-
-        return $this->context->smarty->fetch($this->local_path . 'views/templates/admin/list.tpl');
-    }
-
-    /**
-     * @return string
-     */
-    public function productExtra()
-    {
-        $productId = (int)Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, 0);
         $currentFile = $this->fileManager->getCurrent($productId, $this->playerManager->getSettings());
 
         $this->context->smarty->assign(
             array(
                 'currentFile' => $currentFile,
-                'action' => $this->context->link->getAdminLink('AdminProducts', true),
-                'productId' => (int)Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, 0),
+                'action' => $this->context->link->getAdminLink('AdminCappasity3d', true),
+                'productId' => $productId,
+                'is17' => $this->is17(),
             )
         );
 
@@ -315,13 +265,21 @@ class Cappasity3d extends Module
             return true;
         }
 
+        $cacheKey = self::CACHE_KEY . $productId;
+
         if ($cappasityAction === 'remove') {
-            return $this->fileManager->remove($productId);
+            $this->fileManager->remove($productId);
+            Cache::clean($cacheKey);
+
+            return;
         }
 
         // if id exists update table
         if ($cappasityId !== '') {
-            return $this->fileManager->update($productId, $cappasityId);
+            $result = $this->fileManager->update($productId, $cappasityId);
+            Cache::store($cacheKey, true);
+
+            return $result;
         }
 
         $currentModel = $this->fileManager->getCurrent($productId, $this->playerManager->getSettings());
@@ -343,6 +301,7 @@ class Cappasity3d extends Module
         $reference = Tools::getValue(self::FORM_FIELD_REFERENCE);
         $ean13 = Tools::getValue(self::FORM_FIELD_EAN13);
         $upc = Tools::getValue(self::FORM_FIELD_UPC);
+        $cacheKey = self::CACHE_KEY . $productId;
 
         try {
             $model = $this->fileManager->search(array($reference, $ean13, $upc), $alias);
@@ -354,7 +313,10 @@ class Cappasity3d extends Module
             return true;
         }
 
-        return $this->fileManager->update($productId, $model['id']);
+        $result = $this->fileManager->update($productId, $model['id']);
+        Cache::store($cacheKey, true);
+
+        return $result;
     }
 
     /**
@@ -376,7 +338,11 @@ class Cappasity3d extends Module
 
         $this->context->smarty->assign(array('model' => $currentModel));
 
-        return $this->context->smarty->fetch($this->local_path . 'views/templates/front/header.tpl');
+        $this->context->controller->addCSS($this->local_path . 'views/css/cappasity.css');
+        $this->context->controller->addJS($this->local_path . 'views/js/cappasity16.js');
+        $this->context->controller->addJS($this->local_path . 'views/js/cappasity17.js');
+
+        return $this->context->smarty->fetch($this->local_path . 'views/templates/front/embed.tpl');
     }
 
     /**
@@ -440,5 +406,13 @@ class Cappasity3d extends Module
         );
 
         return $helper;
+    }
+
+    /**
+     * @return bool
+     */
+    public function is17()
+    {
+        return strpos(_PS_VERSION_, '1.7') !== false;
     }
 }

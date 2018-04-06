@@ -9,7 +9,7 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2017 Cappasity Inc.
+ * @copyright 2014-2018 Cappasity Inc.
  * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
  */
 
@@ -38,7 +38,7 @@ class CappasityClient
      */
     public function __construct()
     {
-        $this->client = new \GuzzleHttp\Client(array('base_uri' => 'https://api.cappasity.com/api/'));
+        $this->client = new \GuzzleHttp\Client(array('base_url' => 'https://api.cappasity.com/api/'));
     }
 
     /**
@@ -49,7 +49,9 @@ class CappasityClient
      */
     public function request($method, $uri, array $options = array())
     {
-        return $this->client->request($method, $uri, $options);
+        return $this->client->send(
+            $this->client->createRequest($method, $uri, $options)
+        );
     }
 
     /**
@@ -63,7 +65,7 @@ class CappasityClient
         $options = $this->populateAuth($token);
         $options['query'] = $query;
 
-        $response = $this->client->request(self::METHOD_GET, $uri, $options);
+        $response = $this->request(self::METHOD_GET, $uri, $options);
 
         return $this->decodeResponse($response->getBody());
     }
@@ -79,7 +81,7 @@ class CappasityClient
         $options = $this->populateAuth($token);
         $options['json'] = $data;
 
-        $response = $this->client->request(self::METHOD_POST, $uri, $options);
+        $response = $this->request(self::METHOD_POST, $uri, $options);
 
         return $this->decodeResponse($response->getBody());
     }

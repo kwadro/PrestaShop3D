@@ -8,14 +8,16 @@
 * You must not modify, adapt or create derivative works of this source code
 *
 * @author    Cappasity Inc <info@cappasity.com>
-* @copyright 2014-2017 Cappasity Inc.
+* @copyright 2014-2018 Cappasity Inc.
 * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
 *}
-<div class="input-group col-md-6" style="margin-bottom: 10px">
-    <input type="text" class="form-control cappasity-search-input" value="{$query|escape:'htmlall':'UTF-8'}" placeholder="SKU or name">
-    <span class="input-group-btn">
-        <button class="btn btn-default cappasity-search" type="button">Search</button>
-    </span>
+<div class="row">
+    <div class="input-group col-md-6" style="margin-bottom: 10px">
+        <input type="text" class="form-control cappasity-search-input" value="{$query|escape:'htmlall':'UTF-8'}" placeholder="SKU or name">
+        <span class="input-group-btn">
+            <button class="btn btn-default cappasity-search" type="button">Search</button>
+        </span>
+    </div>
 </div>
 
 <div class="row">
@@ -34,18 +36,20 @@
     {/foreach}
 </div>
 
-<nav>
+<div class="row">
+  <nav>
     <ul class="pagination">
-        {for $page=1 to $pagination.pages}
-            {if $page eq $pagination.page}
-                <li class="active"><span>{$page|escape:'htmlall':'UTF-8'}</span></li>
-            {else}
-                <li>
-                    <a class="cappasity-paginate" href="#" data-page="{$page|escape:'htmlall':'UTF-8'}">
-                        {$page|escape:'htmlall':'UTF-8'}
-                    </a>
-                </li>
-            {/if}
-        {/for}
+      {for $page=1 to $pagination.pages}
+        {if $page eq $pagination.page}
+          <li class="active"><span>{$page|escape:'htmlall':'UTF-8'}</span></li>
+        {else}
+          <li>
+            <a class="cappasity-paginate" href="#" data-page="{$page|escape:'htmlall':'UTF-8'}">
+              {$page|escape:'htmlall':'UTF-8'}
+            </a>
+          </li>
+        {/if}
+      {/for}
     </ul>
-</nav>
+  </nav>
+</div>

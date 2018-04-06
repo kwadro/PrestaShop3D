@@ -8,9 +8,35 @@
 * You must not modify, adapt or create derivative works of this source code
 *
 * @author    Cappasity Inc <info@cappasity.com>
-* @copyright 2014-2017 Cappasity Inc.
+* @copyright 2014-2018 Cappasity Inc.
 * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
 *}
+{if $is17}
+<style>
+#module_cappasity3d ul.pagination {
+  list-style: none;
+  padding-left: 15px;
+}
+
+#module_cappasity3d ul.pagination > li {
+  padding: 0 5px;
+  display: inline-block;
+}
+
+#module_cappasity3d .panel {
+  padding: 10px;
+}
+
+#module_cappasity3d .btn {
+  font-size: .9rem;
+  border-width: 1px;
+}
+
+.cappasity-preview-container {
+  margin: 5px 0;
+}
+</style>
+{/if}
 <div class="panel cappasity-preview-container row" style="{($currentFile)?'':'display: none'|escape:'htmlall':'UTF-8'}">
     <h3>{l s='Preview' mod='cappasity3d'}</h3>
 
@@ -26,9 +52,11 @@
             <button type="submit" name="submitAddproduct" class="btn btn-default pull-right">
                 <i class="process-icon-save"></i>Save
             </button>
+            {if !$is17}
             <button type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right">
                 <i class="process-icon-save"></i>Save and stay
             </button>
+            {/if}
             <button id="cappasity-action-button" type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right">
                 <i class="process-icon-delete"></i>Delete
             </button>
@@ -39,7 +67,7 @@
 <div class="panel">
     <h3>{l s='Cappasity 3D' mod='cappasity3d'}</h3>
     <div class="cappasity-list"
-         data-url="{$action|escape:'htmlall':'UTF-8'}&action=ModuleCappasity3d&id_product={$productId|escape:'htmlall':'UTF-8'}&updateproduct&ajax=1&subaction=list">
+         data-url="{$action|escape:'htmlall':'UTF-8'}&id_product={$productId|escape:'htmlall':'UTF-8'}">
     </div>
 </div>
 
