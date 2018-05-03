@@ -41,40 +41,42 @@ class ProductController extends ProductControllerCore
             return;
         }
 
-        $hasModel = false;
+        $fileId = false;
         $cacheKey = Cappasity3d::CACHE_KEY . $productId;
 
         if (Cache::isStored($cacheKey)) {
-            $hasModel = Cache::retrieve($cacheKey);
+            $fileId = Cache::retrieve($cacheKey);
         } else {
             $client = new CappasityClient();
             $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
             $fileManager = new CappasityManagerFile($client, $dbManager);
-            $hasModel = $fileManager->getCurrent($productId, array()) !== null;
+            $file = $fileManager->getCurrent($productId, array());
 
-            Cache::store($cacheKey, $hasModel);
+            if ($file !== null) {
+                $fileId = $file->getId();
+                Cache::store($cacheKey, $fileId);
+            }
         }
 
-        if (!$hasModel) {
+        if (!$fileId) {
             return;
         }
 
         if (is_object($this->context->smarty->getTemplateVars('product'))) {
             $this->init16();
         } else {
-            $this->init17();
+            $this->init17($fileId);
         }
     }
 
     /**
      *
      */
-    public function init17()
+    public function init17($fileId)
     {
         $product = $this->context->smarty->getTemplateVars('product');
         $categoryImages = $this->context->smarty->getTemplateVars('categoryImages');
         $images = $product['images'];
-        $imageStub = $this->getImageStub();
 
         foreach ($categoryImages as $category => $pictures) {
             if (count($pictures) > 0) {
@@ -87,15 +89,15 @@ class ProductController extends ProductControllerCore
 
         array_unshift($images, array(
             'bySize' => array(
-                ImageType::getFormattedName('small') => $imageStub,
-                ImageType::getFormattedName('cart') => $imageStub,
-                ImageType::getFormattedName('home') => $imageStub,
-                ImageType::getFormattedName('medium') => $imageStub,
-                ImageType::getFormattedName('large') => $imageStub,
+                ImageType::getFormattedName('small') => $this->getImage($fileId, 90, 90),
+                ImageType::getFormattedName('cart') => $this->getImage($fileId, 125, 125),
+                ImageType::getFormattedName('home') => $this->getImageStub(),
+                ImageType::getFormattedName('medium') => $this->getImage($fileId, 452, 452),
+                ImageType::getFormattedName('large') => $this->getImage($fileId, 800, 800),
             ),
-            'small' => $imageStub,
-            'medium' => $imageStub,
-            'large' => $imageStub,
+            'small' => $this->getImageStub(),
+            'medium' => $this->getImage($fileId, 452, 452),
+            'large' => $this->getImage($fileId, 800, 800),
             'legend' => self::IMAGE_ID,
             'cover' => '0',
             'id_image' => self::IMAGE_LEGEND,
@@ -145,6 +147,22 @@ class ProductController extends ProductControllerCore
      */
     public function getImageStub()
     {
-        return array('url' => '/modules/cappasity3d/logo.png', 'width' => 57, 'height' => 57);
+        return array(
+          'url' => '/modules/cappasity3d/views/img/logo-3d.jpg',
+          'width' => 98,
+          'height' => 98,
+        );
+    }
+
+    /**
+     *
+     */
+    public function getImage($fileId, $width, $height)
+    {
+        return array(
+          'url' => "https://api.cappasity.com/api/files/preview/cappasity/w{$width}-h{$height}-cpad/{$fileId}",
+          'width' => $width,
+          'height' => $height,
+        );
     }
 }

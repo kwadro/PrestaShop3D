@@ -132,13 +132,18 @@ class CappasityManagerDatabase
         $limit = (int)$limit;
         $offset = (int)$offset;
 
-        $sql = "SELECT `p`.`id_product` AS `id`, `p`.`reference`, `p`.`upc`, `p`.`ean13`
+        $sql = "SELECT
+                  `p`.`id_product` AS `id`,
+                  `p`.`reference`,
+                  `p`.`upc`,
+                  `p`.`ean13`,
+                  `ps`.`cappasity_id`
                 FROM `{$this->prefix}product` AS `p`
                 LEFT JOIN `{$this->getCappasityTableName()}` AS `ps` ON `p`.`id_product` = `ps`.`product_id`
-                WHERE `ps`.`product_id` IS NULL
-                  AND (
-                    `p`.`upc` > '' OR `p`.`ean13` > 0 OR `p`.`reference` > ''
-                  )
+                WHERE
+                  `p`.`upc` > ''
+                  OR `p`.`ean13` > 0
+                  OR `p`.`reference` > ''
                 LIMIT {$limit}
                 OFFSET {$offset}";
 

@@ -46,14 +46,14 @@ class AdminCappasity3dController extends ModuleAdminController
         $this->syncManager = new CappasityManagerSync($client, $dbManager, $this->module);
 
         if (Tools::getValue(self::REQUEST_PARAM_TOKEN, null) === null) {
-            return $this->processSync();
+            return $this->handleSync();
         }
     }
 
     /**
      *
      */
-    public function processSync()
+    public function handleSync()
     {
         error_reporting(0);
         ignore_user_abort(true);
@@ -61,10 +61,10 @@ class AdminCappasity3dController extends ModuleAdminController
 
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'GET':
-                echo Tools::safeOutput($this->processChallenge());
+                echo Tools::safeOutput($this->handleChallenge());
                 break;
             case 'POST':
-                echo Tools::safeOutput($this->processProducts());
+                echo Tools::safeOutput($this->handleProducts());
                 break;
         }
 
@@ -74,7 +74,7 @@ class AdminCappasity3dController extends ModuleAdminController
     /**
      * @return string
      */
-    public function processChallenge()
+    public function handleChallenge()
     {
         $verifyToken =  Tools::getValue(self::REQUEST_PARAM_VERIFY_TOKEN, null);
         $challenge = Tools::getValue(self::REQUEST_PARAM_CHALLENGE, null);
@@ -93,7 +93,7 @@ class AdminCappasity3dController extends ModuleAdminController
     /**
      * @return string
      */
-    public function processProducts()
+    public function handleProducts()
     {
         $input = Tools::file_get_contents('php://input');
         $verifyToken =  Tools::getValue(self::REQUEST_PARAM_VERIFY_TOKEN, null);
@@ -123,7 +123,12 @@ class AdminCappasity3dController extends ModuleAdminController
         }
 
         foreach ($products as $product) {
-            $this->fileManager->update($product['id'], $product['uploadId']);
+            if ($product['uploadId'] === false) {
+                $this->fileManager->remove($product['id']);
+            } else {
+                $this->fileManager->update($product['id'], $product['uploadId']);
+            }
+
             usleep(500);
         }
 
@@ -133,6 +138,7 @@ class AdminCappasity3dController extends ModuleAdminController
     }
 
     /**
+     * @TODO change method to proccesActionName
      * @return string
      */
     public function initContent()
@@ -165,5 +171,13 @@ class AdminCappasity3dController extends ModuleAdminController
         );
 
         die($this->context->smarty->fetch($this->getTemplatePath() . 'list.tpl'));
+    }
+
+    /**
+     * @return string
+     */
+    public function processStatus()
+    {
+        die((string)$this->dbManager->getSyncTasksCount());
     }
 }

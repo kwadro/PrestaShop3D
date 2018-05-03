@@ -68,6 +68,10 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
                 }
             }
 
+            if ($product['cappasity_id'] !== null) {
+                $params['capp'] = $product['cappasity_id'];
+            }
+
             $chunk[] = $params;
         }
 
@@ -142,7 +146,7 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
      * @param HelperForm $helper
      * @return string
      */
-    public function renderSettingsForm(HelperForm $helper)
+    public function renderSettingsForm(HelperForm $helper, $checkSyncLink)
     {
         $output = '';
         $form = array();
@@ -163,7 +167,9 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
         );
 
         if ($this->hasTasks()) {
-            $output .= $this->module->displayWarning('Synchronization in progress');
+            $output .= "<div id='sync-wrapper' data-url='{$checkSyncLink}'>"
+                . $this->module->displayWarning('Synchronization in progress')
+                . '</div>';
         }
 
         $output .= $helper->generateForm(array(array('form' => $form)));

@@ -57,7 +57,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.1.5';
+        $this->version = '1.3.1';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -99,6 +99,10 @@ class Cappasity3d extends Module
             && $this->registerHook('actionProductAdd')
             && $this->registerHook('displayAdminProductsExtra');
 
+        if ($result === true && $this->isGTE171() === true) {
+            $result = $this->registerHook('displayAfterProductThumbs');
+        }
+
         if ($result === true) {
             $this->playerManager->setDefaultSettings();
         }
@@ -125,6 +129,7 @@ class Cappasity3d extends Module
     public function getContent()
     {
         $output = '';
+
         $this->adminDisplayInformation(
             $this->context->smarty->fetch($this->local_path . 'views/templates/admin/description.tpl')
         );
@@ -152,8 +157,16 @@ class Cappasity3d extends Module
             );
 
             $output .= $this->syncManager->renderSettingsForm(
-                $this->getFormHelper(CappasityManagerSync::SETTINGS_SUBMIT_KEY)
+                $this->getFormHelper(CappasityManagerSync::SETTINGS_SUBMIT_KEY),
+                $this->context->link->getAdminLink('AdminCappasity3d', true)
+                    . '&action=status'
             );
+
+            if ($this->syncManager->hasTasks() === true) {
+                $this->context->controller->addJS(
+                    $this->local_path . 'views/js/check-sync.js'
+                );
+            }
         }
 
         return $output;
@@ -324,6 +337,41 @@ class Cappasity3d extends Module
      */
     public function hookHeader()
     {
+        $this->context->controller->addCSS($this->local_path . 'views/css/cappasity.css');
+
+        if ($this->is17() === true) {
+            $this->context->controller->addJS($this->local_path . 'views/js/cappasity17.js');
+        } else {
+            $this->context->controller->addJS($this->local_path . 'views/js/cappasity16.js');
+        }
+
+        return $this->getEmbedCode();
+    }
+
+    /**
+     * @return string
+     */
+    public function hookDisplayAfterProductThumbs()
+    {
+        // handle quickview only
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return '';
+        }
+
+        return $this->getEmbedCode()
+            . '<script>'
+            . Tools::file_get_contents($this->local_path . 'views/js/cappasity17.js')
+            . '</script>'
+            . '<style>'
+            . Tools::file_get_contents($this->local_path . 'views/css/cappasity.css')
+            . '</style>';
+    }
+
+    /**
+     * @return string
+     */
+    public function getEmbedCode()
+    {
         $productId = Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, null);
 
         if ($productId === null) {
@@ -337,10 +385,6 @@ class Cappasity3d extends Module
         }
 
         $this->context->smarty->assign(array('model' => $currentModel));
-
-        $this->context->controller->addCSS($this->local_path . 'views/css/cappasity.css');
-        $this->context->controller->addJS($this->local_path . 'views/js/cappasity16.js');
-        $this->context->controller->addJS($this->local_path . 'views/js/cappasity17.js');
 
         return $this->context->smarty->fetch($this->local_path . 'views/templates/front/embed.tpl');
     }
@@ -414,5 +458,13 @@ class Cappasity3d extends Module
     public function is17()
     {
         return strpos(_PS_VERSION_, '1.7') !== false;
+    }
+
+    /**
+     * @return string
+     */
+    public function isGTE171()
+    {
+        return $this->is17() && strpos(_PS_VERSION_, '1.7.0') === false;
     }
 }
