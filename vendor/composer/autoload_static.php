@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642
+class ComposerStaticInitd0d572354bca5eb8c49e476f1939ff33
 {
     public static $files = array (
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
@@ -42,6 +42,16 @@ class ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642
         ),
     );
 
+    public static $prefixesPsr0 = array (
+        'R' => 
+        array (
+            'Raven_' => 
+            array (
+                0 => __DIR__ . '/..' . '/sentry/sentry/lib',
+            ),
+        ),
+    );
+
     public static $classMap = array (
         'CappasityClient' => __DIR__ . '/../..' . '/library/cappasity/Client.php',
         'CappasityManagerAbstractManager' => __DIR__ . '/../..' . '/library/cappasity/Manager/AbstractManager.php',
@@ -58,9 +68,10 @@ class ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit705d3eaa6fb1f3eb5264c4b756b92642::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitd0d572354bca5eb8c49e476f1939ff33::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitd0d572354bca5eb8c49e476f1939ff33::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitd0d572354bca5eb8c49e476f1939ff33::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInitd0d572354bca5eb8c49e476f1939ff33::$classMap;
 
         }, null, ClassLoader::class);
     }

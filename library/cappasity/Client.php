@@ -29,16 +29,63 @@ class CappasityClient
     const METHOD_GET = 'GET';
 
     /**
+     * Cappasity API server
+     * @var string
+     */
+    const API_BASE = 'https://api.cappasity.com/api/';
+
+    /**
+     * Reporting URL to debug errors.
+     * @var string
+     */
+    const SENTRY_DSN = 'https://4a87ef881e8140d7927f6a3d05796bf5:669b86c7469b47a69cc97952da2e3a5b@sentry.io/1201230';
+
+    /**
      * @var
      */
     protected $client;
 
     /**
-     *
+     * @var
      */
-    public function __construct()
+    public $sentry;
+
+    /**
+     * Cappasity API Client.
+     * @param string $version - module version.
+     */
+    public function __construct($version)
     {
-        $this->client = new \GuzzleHttp\Client(array('base_url' => 'https://api.cappasity.com/api/'));
+        $this->client = new \GuzzleHttp\Client(array('base_url' => self::API_BASE));
+        $cappasityClient = $this;
+
+        /**
+         * https://docs.sentry.io/clients/php/config/
+         * @var Raven_Client
+         */
+        $this->sentry = new Raven_Client(self::SENTRY_DSN, array(
+            'tags' => array(
+                'php_version' => phpversion(),
+            ),
+            'release' => $version,
+            'transport' => function ($client, $data) use ($cappasityClient) {
+                $options = array(
+                    'headers' => array(
+                        'Content-Encoding' => 'gzip',
+                        'Content-Type'     => 'application/octet-stream',
+                        'User-Agent'       => $client->getUserAgent(),
+                        'X-Sentry-Auth'    => $client->getAuthHeader(),
+                    ),
+                    'body' => gzencode(Tools::jsonEncode($data)),
+                );
+
+                $cappasityClient->request(
+                    self::METHOD_POST,
+                    $client->getServerEndpoint(),
+                    $options
+                );
+            }
+        ));
     }
 
     /**

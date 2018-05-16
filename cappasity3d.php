@@ -48,7 +48,12 @@ class Cappasity3d extends Module
     /**
      *
      */
-     const CACHE_KEY = 'cappasity::';
+    const CACHE_KEY = 'cappasity::';
+
+    /**
+     * @var CappasityClient
+     */
+    protected $client;
 
     /**
      * Cappasity3d constructor.
@@ -57,7 +62,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.3.1';
+        $this->version = '1.4.1';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -70,14 +75,14 @@ class Cappasity3d extends Module
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
 
-        $client = new CappasityClient();
+        $this->client = new CappasityClient($this->version);
         $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
 
         $this->dbManager = $dbManager;
-        $this->accountManager = new CappasityManagerAccount($client, $this);
-        $this->fileManager = new CappasityManagerFile($client, $dbManager);
+        $this->accountManager = new CappasityManagerAccount($this->client, $this);
+        $this->fileManager = new CappasityManagerFile($this->client, $dbManager);
         $this->playerManager = new CappasityManagerPlayer($this);
-        $this->syncManager = new CappasityManagerSync($client, $dbManager, $this);
+        $this->syncManager = new CappasityManagerSync($this->client, $dbManager, $this);
     }
 
     /**
@@ -182,14 +187,30 @@ class Cappasity3d extends Module
         try {
             $account = $this->accountManager->info($token);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $this->client->sentry->captureException($e, array(
+                'level' => 'debug',
+                'extra' => array(
+                    'code' => 'E_INVALID_TOKEN'
+                )
+            ));
             return $this->displayError($this->l('Invalid token'));
         } catch (Exception $e) {
-            return $this->displayError($this->l('Something went wrong'));
+            $event_id = $this->client->sentry->captureException($e, array(
+                'level' => 'fatal',
+                'extra' => array(
+                    'code' => 'E_TOKEN_SYNC'
+                )
+            ));
+            return $this->displayError(
+                '[Error ' . $event_id . '] ' .
+                $this->l('Something went wrong') .
+                ': ' . $e->getMessage()
+            );
         }
 
         $this->accountManager->updateSettings($token, $account);
 
-        return $this->displayConfirmation($this->l('Account settings was saved'));
+        return $this->displayConfirmation($this->l('Account settings were saved'));
     }
 
     /**
@@ -201,10 +222,16 @@ class Cappasity3d extends Module
             // use $_POST for v1.6.0.14
             $this->playerManager->updateSettings($_POST);
         } catch (CappasityManagerPlayerExceptionsValidation $e) {
+            $this->client->sentry->captureException($e, array(
+                'level' => 'debug',
+                'extra' => array(
+                    'code' => 'E_PLAYER_SETTINGS'
+                )
+            ));
             return $this->displayError($e->getMessage());
         }
 
-        return $this->displayConfirmation($this->l('Module settings was saved'));
+        return $this->displayConfirmation($this->l('Module settings were saved'));
     }
 
     /**
@@ -215,21 +242,37 @@ class Cappasity3d extends Module
         ignore_user_abort(true);
         set_time_limit(0);
 
-        $token = $this->accountManager->getToken();
         $callback = $this->is17()
           ? $this->context->link->getAdminLink('AdminCappasity3d', false)
           : Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . basename(_PS_ADMIN_DIR_) . '/'
             . $this->context->link->getAdminLink('AdminCappasity3d', false);
 
         try {
-            $this->syncManager->run($token, $callback, 2000);
+            $token = $this->accountManager->getToken();
+            if ($token !== null) {
+                // verify token still active
+                $this->accountManager->info($token);
+                // start sync process
+                $this->syncManager->run($token, $callback, 2000);
+            } else {
+                throw new Exception('Attempted to sync without security token present');
+            }
         } catch (Exception $e) {
+            $event_id = $this->client->sentry->captureException($e, array(
+                'level' => 'error',
+                'extra' => array(
+                    'code' => 'E_SYNC',
+                    'callback' => $callback
+                )
+            ));
+
             return $this->displayError(
+                '[Error ' . $event_id . '] ' .
                 $this->l('Something went wrong, please try again later or contact customer care.')
             );
         }
 
-        return $this->displayConfirmation($this->l('Synchronization started'));
+        return $this->displayConfirmation($this->l('Sync started'));
     }
 
     /**
@@ -247,7 +290,7 @@ class Cappasity3d extends Module
         }
 
         if ($token === null) {
-            return $this->displayError($this->l('Set up your account in setting of module'));
+            return $this->displayError($this->l('Set up your account in settings of the module'));
         }
 
         $currentFile = $this->fileManager->getCurrent($productId, $this->playerManager->getSettings());
@@ -319,6 +362,12 @@ class Cappasity3d extends Module
         try {
             $model = $this->fileManager->search(array($reference, $ean13, $upc), $alias);
         } catch (Exception $e) {
+            $this->client->sentry->captureException($e, array(
+                'level' => 'error',
+                'extra' => array(
+                    'code' => 'E_HOOK_PRODUCT_ADD'
+                )
+            ));
             return false;
         }
 

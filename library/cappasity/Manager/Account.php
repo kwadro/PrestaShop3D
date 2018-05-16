@@ -135,6 +135,12 @@ class CappasityManagerAccount extends CappasityManagerAbstractManager
         $alias = $response['data']['attributes']['alias'];
         $plan = $response['data']['attributes']['plan'];
 
+        // provide authentication context to the user
+        $this->client->sentry->user_context(array(
+            'id' => $alias,
+            'plan' => $plan
+        ));
+
         $account = new CappasityModelAccount($plan, $alias);
 
         return $account;
