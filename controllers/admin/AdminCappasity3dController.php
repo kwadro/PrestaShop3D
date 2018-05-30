@@ -30,20 +30,25 @@ class AdminCappasity3dController extends ModuleAdminController
     const REQUEST_PARAM_CHALLENGE = 'challenge';
 
     /**
+     * @var CappasityClient
+     */
+    protected $client;
+
+    /**
      *
      */
     public function __construct()
     {
         parent::__construct();
 
-        $client = new CappasityClient();
         $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
 
-        $this->accountManager = new CappasityManagerAccount($client, $this->module);
+        $this->client = new CappasityClient('1.4.3');
+        $this->accountManager = new CappasityManagerAccount($this->client, $this->module);
         $this->dbManager = $dbManager;
-        $this->fileManager = new CappasityManagerFile($client, $dbManager);
+        $this->fileManager = new CappasityManagerFile($this->client, $dbManager);
         $this->playerManager = new CappasityManagerPlayer($this->module);
-        $this->syncManager = new CappasityManagerSync($client, $dbManager, $this->module);
+        $this->syncManager = new CappasityManagerSync($this->client, $dbManager, $this->module);
 
         if (Tools::getValue(self::REQUEST_PARAM_TOKEN, null) === null) {
             return $this->handleSync();
@@ -55,17 +60,35 @@ class AdminCappasity3dController extends ModuleAdminController
      */
     public function handleSync()
     {
-        error_reporting(0);
-        ignore_user_abort(true);
-        set_time_limit(0);
+        try {
+          error_reporting(0);
+          ignore_user_abort(true);
+          set_time_limit(0);
+        } catch (Exception $e) {
+          $this->client->sentry->captureException($e, array(
+              'level' => 'error',
+              'extra' => array(
+                  'code' => 'E_FAILED_SETTINGS'
+              )
+          ));
+        }
 
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case 'GET':
-                echo Tools::safeOutput($this->handleChallenge());
-                break;
-            case 'POST':
-                echo Tools::safeOutput($this->handleProducts());
-                break;
+        try {
+          switch ($_SERVER['REQUEST_METHOD']) {
+              case 'GET':
+                  echo Tools::safeOutput($this->handleChallenge());
+                  break;
+              case 'POST':
+                  echo Tools::safeOutput($this->handleProducts());
+                  break;
+          }
+        } catch (Exception $e) {
+          $this->client->sentry->captureException($e, array(
+              'level' => 'error',
+              'extra' => array(
+                  'code' => 'E_FAILED_SYNC'
+              )
+          ));
         }
 
         die();

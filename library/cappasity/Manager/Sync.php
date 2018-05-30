@@ -19,7 +19,7 @@
 class CappasityManagerSync extends CappasityManagerAbstractManager
 {
     /**
-     *
+     * @var string
      */
     const SETTINGS_SUBMIT_KEY = 'submitCappasityAccountSync';
 
@@ -52,22 +52,40 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
     }
 
     /**
+     * @param  string  $sku
+     * @return boolean
+     */
+    protected function isValidSKU(string $sku)
+    {
+        return preg_match('/^[0-9A-Za-z_\\-.]{1,50}$/', $sku);
+    }
+
+    /**
      * @param array $products
      * @return array
      */
     protected function makeChunk(array $products)
     {
         $chunk = array();
+        $refs = array('reference', 'upc', 'ean13');
 
         foreach ($products as $product) {
             $params = array('id' => $product['id'], 'aliases' => array());
 
-            foreach (array('reference', 'upc', 'ean13') as $alias) {
-                if (empty($product[$alias]) === false) {
-                    $params['aliases'][] = $product[$alias];
+            // match all possible SKUs
+            foreach ($refs as $alias) {
+                $sku = $product[$alias];
+                if (empty($sku) === false && $this->isValidSKU($sku) === true) {
+                    $params['aliases'][] = $sku;
                 }
             }
 
+            // in case we have no available SKUs -> skip
+            if (count($params['aliases']) === 0) {
+                continue;
+            }
+
+            // if we already have an assigned cappasity id -> verify it
             if ($product['cappasity_id'] !== null) {
                 $params['capp'] = $product['cappasity_id'];
             }

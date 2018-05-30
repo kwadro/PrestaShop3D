@@ -62,7 +62,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.4.1';
+        $this->version = '1.4.3';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;

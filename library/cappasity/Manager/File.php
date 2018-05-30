@@ -79,7 +79,8 @@ class CappasityManagerFile
             try {
                 $response = $this->client->get("files/info/{$owner}/{$query}");
             } catch (\GuzzleHttp\Exception\ClientException $e) {
-                if ($e->getCode() === 404) {
+                $code = $e->getCode();
+                if ($code === 404 || $code === 400) {
                     continue;
                 }
 
