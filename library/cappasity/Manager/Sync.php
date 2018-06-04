@@ -55,7 +55,7 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
      * @param  string  $sku
      * @return boolean
      */
-    protected function isValidSKU(string $sku)
+    protected function isValidSKU($sku)
     {
         return preg_match('/^[0-9A-Za-z_\\-.]{1,50}$/', $sku);
     }
