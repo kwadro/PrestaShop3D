@@ -52,20 +52,20 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
     }
 
     /**
-     * @param  string  $sku
-     * @return boolean
-     */
-    protected function isValidSKU($sku)
-    {
-        return preg_match('/^[0-9A-Za-z_\\-.]{1,50}$/', $sku);
-    }
-
-    /**
      * @param array $products
      * @return array
      */
     protected function makeChunk(array $products)
     {
+        $this->client->sentry->breadcrumbs->record(array(
+            'message' => 'initiating chunk',
+            'category' => 'sync',
+            'level' => 'info',
+            'data' => array(
+                'products' => count($products)
+            ),
+        ));
+
         $chunk = array();
         $refs = array('reference', 'upc', 'ean13');
 
@@ -75,13 +75,32 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
             // match all possible SKUs
             foreach ($refs as $alias) {
                 $sku = $product[$alias];
-                if (empty($sku) === false && $this->isValidSKU($sku) === true) {
+                if ($this->client->isValidSKU($sku) === true) {
                     $params['aliases'][] = $sku;
+                } else {
+                    $this->client->sentry->breadcrumbs->record(array(
+                        'message' => 'omitting sku',
+                        'category' => 'sync',
+                        'level' => 'debug',
+                        'data' => array(
+                            'sku' => $sku,
+                            'type' => gettype($sku),
+                        ),
+                    ));
                 }
             }
 
             // in case we have no available SKUs -> skip
             if (count($params['aliases']) === 0) {
+                $this->client->sentry->breadcrumbs->record(array(
+                    'message' => 'omitting product',
+                    'category' => 'sync',
+                    'level' => 'debug',
+                    'data' => array(
+                        'product' => $product['id'],
+                        'type' => gettype($product['id']),
+                    ),
+                ));
                 continue;
             }
 
@@ -104,6 +123,16 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
      */
     protected function exchange($token, $products, $callback, $verifyToken)
     {
+        $this->client->sentry->breadcrumbs->record(array(
+            'message' => 'omitting chunk list ' . $i,
+            'category' => 'sync',
+            'level' => 'debug',
+            'data' => array(
+                'products' => $products,
+                'verifyToken' => $verifyToken,
+            ),
+        ));
+
         $data = array(
             'data' => array(
                 'attributes' => array(
@@ -144,19 +173,24 @@ class CappasityManagerSync extends CappasityManagerAbstractManager
                 break;
             }
 
+            $chunk = $this->makeChunk($products);
+            $i += 1;
+
+            // if current chunk actually has no usable products - skip
+            if (count($chunk) === 0) {
+                $this->client->sentry->captureMessage('skipping chunk %d of products', array(count($products)));
+                continue;
+            }
+
             $verification = uniqid();
             $this->db->createSyncTask($verification);
-            $chunk = $this->makeChunk($products);
-
+            // if we have at least 1 product - continue with this iteration
             try {
                 $this->exchange($token, $chunk, $callback, $verification);
             } catch (Exception $exception) {
                 $this->db->removeSyncTask($verification);
-
                 throw $exception;
             }
-
-            $i += 1;
         } while (count($products) > 0);
     }
 

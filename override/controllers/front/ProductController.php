@@ -47,7 +47,7 @@ class ProductController extends ProductControllerCore
         if (Cache::isStored($cacheKey)) {
             $fileId = Cache::retrieve($cacheKey);
         } else {
-            $client = new CappasityClient();
+            $client = new CappasityClient('1.4.11');
             $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
             $fileManager = new CappasityManagerFile($client, $dbManager);
             $file = $fileManager->getCurrent($productId, array());
@@ -76,6 +76,8 @@ class ProductController extends ProductControllerCore
     {
         $product = $this->context->smarty->getTemplateVars('product');
         $categoryImages = $this->context->smarty->getTemplateVars('categoryImages');
+        // TODO: make sure we use <module>::SETTING_ALIAS from module const
+        $alias = Configuration::get('cappasityAccountAlias');
         $images = $product['images'];
 
         foreach ($categoryImages as $category => $pictures) {
@@ -89,15 +91,15 @@ class ProductController extends ProductControllerCore
 
         array_unshift($images, array(
             'bySize' => array(
-                ImageType::getFormattedName('small') => $this->getImage($fileId, 90, 90),
-                ImageType::getFormattedName('cart') => $this->getImage($fileId, 125, 125),
+                ImageType::getFormattedName('small') => $this->getImage($fileId, 90, 90, $alias),
+                ImageType::getFormattedName('cart') => $this->getImage($fileId, 125, 125, $alias),
                 ImageType::getFormattedName('home') => $this->getImageStub(),
-                ImageType::getFormattedName('medium') => $this->getImage($fileId, 452, 452),
-                ImageType::getFormattedName('large') => $this->getImage($fileId, 800, 800),
+                ImageType::getFormattedName('medium') => $this->getImage($fileId, 452, 452, $alias),
+                ImageType::getFormattedName('large') => $this->getImage($fileId, 800, 800, $alias),
             ),
             'small' => $this->getImageStub(),
-            'medium' => $this->getImage($fileId, 452, 452),
-            'large' => $this->getImage($fileId, 800, 800),
+            'medium' => $this->getImage($fileId, 452, 452, $alias),
+            'large' => $this->getImage($fileId, 800, 800, $alias),
             'legend' => self::IMAGE_ID,
             'cover' => '0',
             'id_image' => self::IMAGE_LEGEND,
@@ -157,10 +159,10 @@ class ProductController extends ProductControllerCore
     /**
      *
      */
-    public function getImage($fileId, $width, $height)
+    public function getImage($fileId, $width, $height, $alias)
     {
         return array(
-          'url' => "https://api.cappasity.com/api/files/preview/cappasity/w{$width}-h{$height}-cpad/{$fileId}",
+          'url' => "https://api.cappasity.com/api/files/preview/{$alias}/w{$width}-h{$height}-cpad/{$fileId}",
           'width' => $width,
           'height' => $height,
         );

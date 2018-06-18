@@ -134,6 +134,15 @@ class CappasityClient
     }
 
     /**
+     * @param  string  $sku
+     * @return boolean
+     */
+    public function isValidSKU($sku)
+    {
+        return empty($sku) === false && preg_match('/^[0-9A-Za-z_\\-.]{1,50}$/', $sku) === 1;
+    }
+
+    /**
      * @param string $token
      * @param array $options
      * @return array

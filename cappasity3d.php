@@ -62,11 +62,12 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.4.4';
+        $this->version = '1.4.11';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
         $this->module_key = 'c0e2e1cb0722701f2fbe5ad322c89654';
+        $this->author_address = '0x00F704196923d7739D922c83b48ca21916d024c5';
 
         parent::__construct();
 
@@ -268,7 +269,7 @@ class Cappasity3d extends Module
 
             return $this->displayError(
                 '[Error ' . $event_id . '] ' .
-                $this->l('Something went wrong, please try again later or contact customer care.')
+                $this->l('Something went wrong, please try again later or contact customer care: support@cappasity.com')
             );
         }
 

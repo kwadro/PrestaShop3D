@@ -76,6 +76,11 @@ class CappasityManagerFile
     public function search(array $queries, $owner)
     {
         foreach ($queries as $query) {
+            // verify to ensure that $query
+            if ($this->client->isValidSKU($query) !== true) {
+                continue;
+            }
+
             try {
                 $response = $this->client->get("files/info/{$owner}/{$query}");
             } catch (\GuzzleHttp\Exception\ClientException $e) {
