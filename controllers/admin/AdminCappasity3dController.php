@@ -43,7 +43,7 @@ class AdminCappasity3dController extends ModuleAdminController
 
         $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
 
-        $this->client = new CappasityClient('1.4.11');
+        $this->client = new CappasityClient('1.4.12');
         $this->accountManager = new CappasityManagerAccount($this->client, $this->module);
         $this->dbManager = $dbManager;
         $this->fileManager = new CappasityManagerFile($this->client, $dbManager);

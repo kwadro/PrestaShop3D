@@ -47,7 +47,7 @@ class ProductController extends ProductControllerCore
         if (Cache::isStored($cacheKey)) {
             $fileId = Cache::retrieve($cacheKey);
         } else {
-            $client = new CappasityClient('1.4.11');
+            $client = new CappasityClient('1.4.12');
             $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
             $fileManager = new CappasityManagerFile($client, $dbManager);
             $file = $fileManager->getCurrent($productId, array());
@@ -162,7 +162,7 @@ class ProductController extends ProductControllerCore
     public function getImage($fileId, $width, $height, $alias)
     {
         return array(
-          'url' => "https://api.cappasity.com/api/files/preview/{$alias}/w{$width}-h{$height}-cpad/{$fileId}",
+          'url' => "https://api.cappasity.com/api/files/preview/{$alias}/w{$width}-h{$height}-cpad/{$fileId}.jpeg",
           'width' => $width,
           'height' => $height,
         );
