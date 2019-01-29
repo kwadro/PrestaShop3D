@@ -9,9 +9,9 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2018 Cappasity Inc.
- * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
- */
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
+*/
 
  /**
   * Class ProductController
@@ -19,13 +19,9 @@
 class ProductController extends ProductControllerCore
 {
     /**
-     *
+     * @TODO legacy block, prestashop could not remove those constans on uninstal
      */
     const IMAGE_ID = 1000000000;
-
-    /**
-     *
-     */
     const IMAGE_LEGEND = 'cappasity-preview';
 
     /**
@@ -35,81 +31,170 @@ class ProductController extends ProductControllerCore
     {
         parent::initContent();
 
-        $productId = (int)Tools::getValue('id_product', null);
+        $productId = Tools::getValue('id_product', null);
 
         if ($productId === null) {
             return;
         }
 
-        $fileId = false;
-        $cacheKey = Cappasity3d::CACHE_KEY . $productId;
+        $cappasityImages = $this->getCappasityImages($productId);
 
-        if (Cache::isStored($cacheKey)) {
-            $fileId = Cache::retrieve($cacheKey);
-        } else {
-            $client = new CappasityClient('1.4.12');
-            $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
-            $fileManager = new CappasityManagerFile($client, $dbManager);
-            $file = $fileManager->getCurrent($productId, array());
-
-            if ($file !== null) {
-                $fileId = $file->getId();
-                Cache::store($cacheKey, $fileId);
-            }
-        }
-
-        if (!$fileId) {
+        if (count($cappasityImages) === 0) {
             return;
         }
 
-        if (is_object($this->context->smarty->getTemplateVars('product'))) {
-            $this->init16();
+        $product = $this->context->smarty->getTemplateVars('product');
+
+        if (is_array($product) || $product instanceof ArrayAccess) {
+            $this->init17($cappasityImages);
         } else {
-            $this->init17($fileId);
+            $this->init16($cappasityImages);
         }
     }
 
     /**
      *
      */
-    public function init17($fileId)
+    protected function getCappasityImages($productId)
     {
-        $product = $this->context->smarty->getTemplateVars('product');
-        $categoryImages = $this->context->smarty->getTemplateVars('categoryImages');
-        // TODO: make sure we use <module>::SETTING_ALIAS from module const
-        $alias = Configuration::get('cappasityAccountAlias');
-        $images = $product['images'];
+        $cacheKey = Cappasity3d::CACHE_KEY . $productId;
+        $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
 
-        foreach ($categoryImages as $category => $pictures) {
-            if (count($pictures) > 0) {
-                $sampleImage = reset($pictures);
-                $sampleImage['id_image'] = self::IMAGE_ID;
-                $sampleImage['legend'] = self::IMAGE_LEGEND;
-                array_unshift($categoryImages[$category], $sampleImage);
+        // @todo Does a cache work?
+        if (Cache::isStored($cacheKey)) {
+            $cappasityImages = Cache::retrieve($cacheKey);
+        } else {
+            $cappasityImages = $dbManager->getCappasity(array('productId' => (int)$productId));
+
+            if (count($cappasityImages) !== 0) {
+                Cache::store($cacheKey, $cappasityImages);
             }
         }
 
-        array_unshift($images, array(
-            'bySize' => array(
-                ImageType::getFormattedName('small') => $this->getImage($fileId, 90, 90, $alias),
-                ImageType::getFormattedName('cart') => $this->getImage($fileId, 125, 125, $alias),
-                ImageType::getFormattedName('home') => $this->getImageStub(),
-                ImageType::getFormattedName('medium') => $this->getImage($fileId, 452, 452, $alias),
-                ImageType::getFormattedName('large') => $this->getImage($fileId, 800, 800, $alias),
-            ),
-            'small' => $this->getImageStub(),
-            'medium' => $this->getImage($fileId, 452, 452, $alias),
-            'large' => $this->getImage($fileId, 800, 800, $alias),
-            'legend' => self::IMAGE_ID,
-            'cover' => '0',
-            'id_image' => self::IMAGE_LEGEND,
-            'position' => self::IMAGE_ID,
-            'associatedVariants' => array_keys($categoryImages),
-        ));
+        return $cappasityImages;
+    }
+
+    /**
+     *
+     */
+    protected function groupByCappasityImage(array $images = array())
+    {
+        $counter = 100000000;
+        $cappasityImages = array();
+
+        foreach ($images as $image) {
+            $cappasityId = (string)$image['cappasity_id'];
+            $variantId = (string)$image['variant_id'];
+
+            if (array_key_exists($cappasityId, $cappasityImages) === false) {
+                $imageId = (string)$counter += 1;
+                $cappasityImages[$cappasityId] = array(
+                  'cappasityId' => $cappasityId,
+                  'imageId' => $imageId,
+                  'variants' => array((string)$variantId),
+                );
+            } else {
+                $cappasityImages[$cappasityId]['variants'][] = $variantId;
+            }
+        }
+
+        return $cappasityImages;
+    }
+
+    /**
+     *
+     */
+    protected function groupByVariant(array $images = array())
+    {
+        $counter = 100000000;
+        $cappasityImages = array();
+
+        foreach ($images as $image) {
+            $cappasityId = (string)$image['cappasity_id'];
+            $variantId = (string)$image['variant_id'];
+            $imageId = (string)$counter += 1;
+
+            if (array_key_exists($variantId, $cappasityImages) === false) {
+                $cappasityImages[$variantId] = array();
+            }
+
+            if (array_key_exists($cappasityId, $cappasityImages[$variantId]) === true) {
+                continue;
+            }
+
+            $cappasityImages[$variantId][$cappasityId] = array(
+              'cappasityId' => $cappasityId,
+              'imageId' => $imageId,
+              'variantId' => $variantId,
+            );
+        }
+
+        return $cappasityImages;
+    }
+
+    /**
+     *
+     */
+    protected function init17(array $cappasityImages = array())
+    {
+        $product = $this->context->smarty->getTemplateVars('product');
+        $combinationImages = is_array($this->context->smarty->getTemplateVars('combinationImages'))
+          ? $this->context->smarty->getTemplateVars('combinationImages')
+          : array();
+        $productAttributeId = (string)$product['id_product_attribute'];
+        $images = $product['images'];
+        $productVariants = $product['main_variants'];
+
+        $groupedByCappasityImage = $this->groupByCappasityImage($cappasityImages);
+        $groupedByVariant = $this->groupByVariant($cappasityImages);
+
+        foreach ($productVariants as $productVariant) {
+            $productVariantId = (string)$productVariant['id_product_attribute'];
+            $cappasityVariantImages = false;
+
+            if (array_key_exists($productVariantId, $groupedByVariant) === true) {
+                $cappasityVariantImages = $groupedByVariant[$productVariantId];
+            } elseif (array_key_exists('0', $groupedByVariant) === true) {
+                $cappasityVariantImages = $groupedByVariant['0'];
+            }
+
+            if ($cappasityVariantImages === false) {
+                continue;
+            }
+
+            if (array_key_exists($productVariantId, $combinationImages) === false) {
+                $combinationImages[$productVariantId] = array();
+            }
+
+            foreach ($cappasityVariantImages as $cappasityVariantImage) {
+                $imageId = (string)$cappasityVariantImage['imageId'];
+                $cappasityId = (string)$cappasityVariantImage['cappasityId'];
+                $legend = "cappasity:{$cappasityId}";
+
+                array_unshift($combinationImages[$productVariantId], array(
+                    'id_product_attribute' => $productVariantId,
+                    'id_image' => $imageId,
+                    'legend' => $legend,
+                ));
+            }
+        }
+
+        // has variants
+        if (array_key_exists($productAttributeId, $groupedByVariant) === true) {
+            foreach ($groupedByVariant[$productAttributeId] as $variantImage) {
+                array_unshift($images, $this->get17Image($variantImage, $groupedByCappasityImage));
+            }
+        // has no variants, try to add common image
+        } elseif (array_key_exists('0', $groupedByVariant) === true) {
+            foreach ($groupedByVariant['0'] as $variantImage) {
+                array_unshift($images, $this->get17Image($variantImage, $groupedByCappasityImage));
+            }
+        }
+
         $product['images'] = $images;
 
         $this->context->smarty->assign(array(
-            'combinationImages' => $categoryImages,
+            'combinationImages' => $combinationImages,
             'product' => $product,
         ));
     }
@@ -117,26 +202,50 @@ class ProductController extends ProductControllerCore
     /**
      *
      */
-    public function init16()
+    protected function init16(array $cappasityImages = array())
     {
-        $images = $this->context->smarty->getTemplateVars('images');
+        $groupedByCappasityImage = $this->groupByCappasityImage($cappasityImages);
+        // could be null or array
+        $templateImages = $this->context->smarty->getTemplateVars('images');
+        $images = is_array($templateImages) ? $templateImages : array();
+        // could be null or array
         $combinationImages = $this->context->smarty->getTemplateVars('combinationImages');
 
-        foreach ($combinationImages as $productId => $pictures) {
-            if (count($pictures) > 0) {
-                $sampleImage = reset($pictures);
-                $sampleImage['id_image'] = self::IMAGE_ID;
-                $sampleImage['legend'] = self::IMAGE_LEGEND;
-                array_unshift($combinationImages[$productId], $sampleImage);
+        foreach ($groupedByCappasityImage as $cappasityImage) {
+            $imageId = (string)$cappasityImage['imageId'];
+            $variantsIds = $cappasityImage['variants'];
+            $cappasityId = (string)$cappasityImage['cappasityId'];
+            $legend = "cappasity:{$cappasityId}";
+            // add on top of all pictures
+            $images = array($imageId => array(
+                'legend' => $legend,
+                'cover' => '0',
+                'id_image' => $imageId,
+                'position' => $imageId,
+            )) + $images;
+
+            // add variants
+            foreach ($variantsIds as $variantId) {
+                if ($variantId === '0') {
+                    continue;
+                }
+
+                if (is_array($combinationImages) === false) {
+                    $combinationImages = array();
+                }
+
+                if (array_key_exists($variantId, $combinationImages) === false) {
+                    $combinationImages[$variantId] = array();
+                }
+
+                // add picture for variant
+                array_unshift($combinationImages[$variantId], array(
+                     'id_product_attribute' => $variantId,
+                     'id_image' => $imageId,
+                     'legend' => $legend,
+                ));
             }
         }
-
-        array_unshift($images, array(
-            'legend' => self::IMAGE_LEGEND,
-            'cover' => '0',
-            'id_image' => self::IMAGE_ID,
-            'position' => self::IMAGE_ID,
-        ));
 
         $this->context->smarty->assign(array(
             'combinationImages' => $combinationImages,
@@ -147,24 +256,58 @@ class ProductController extends ProductControllerCore
     /**
      *
      */
-    public function getImageStub()
+    protected function getImageStub()
     {
         return array(
-          'url' => '/modules/cappasity3d/views/img/logo-3d.jpg',
-          'width' => 98,
-          'height' => 98,
+            'url' => '/modules/cappasity3d/views/img/1548780211.logo-3d.jpg',
+            'width' => 98,
+            'height' => 98,
         );
     }
 
     /**
      *
      */
-    public function getImage($fileId, $width, $height, $alias)
+    protected function getImage($fileId, $width, $height)
     {
+        // TODO: make sure we use <module>::SETTING_ALIAS from module const
+        $alias = Configuration::get('cappasityAccountAlias');
+
         return array(
-          'url' => "https://api.cappasity.com/api/files/preview/{$alias}/w{$width}-h{$height}-cpad/{$fileId}.jpeg",
-          'width' => $width,
-          'height' => $height,
+            'url' => "https://api.cappasity.com/api/files/preview/{$alias}/w{$width}-h{$height}-cpad/{$fileId}.jpeg",
+            'width' => $width,
+            'height' => $height,
+        );
+    }
+
+    /**
+     *
+     */
+    protected function get17Image($image, $groupedByCappasityImage)
+    {
+        $imageId = (string)$image['imageId'];
+        $cappasityId = (string)$image['cappasityId'];
+        $legend = "cappasity:{$cappasityId}";
+
+        return array(
+            'bySize' => array(
+                ImageType::getFormattedName('small') => $this->getImage($cappasityId, 90, 90),
+                ImageType::getFormattedName('cart') => $this->getImage($cappasityId, 125, 125),
+                ImageType::getFormattedName('home') => $this->getImageStub(),
+                ImageType::getFormattedName('medium') => $this->getImage($cappasityId, 452, 452),
+                ImageType::getFormattedName('large') => $this->getImage($cappasityId, 800, 800),
+            ),
+            'small' => $this->getImageStub(),
+            'medium' => $this->getImage($cappasityId, 452, 452),
+            'large' => $this->getImage($cappasityId, 800, 800),
+            'legend' => $legend,
+            'cover' => '0',
+            'id_image' => $imageId,
+            'position' => $imageId,
+            'associatedVariants' => array_values(array_diff(
+                $groupedByCappasityImage[$cappasityId]['variants'],
+                array('0')
+            )),
         );
     }
 }

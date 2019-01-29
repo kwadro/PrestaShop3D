@@ -1,5 +1,4 @@
-<?php
-/**
+{*
  * NOTICE OF LICENSE
  *
  * This file is licenced under the Software License Agreement.
@@ -11,14 +10,6 @@
  * @author    Cappasity Inc <info@cappasity.com>
  * @copyright 2014-2019 Cappasity Inc.
  * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
-*/
-
-header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
-
-header('Location: ../');
-exit;
+*}
+<div id="cappasity-player-settings"
+     data-embed="{$playerSettings|@json_encode|escape:'htmlall':'UTF-8'}"></div>

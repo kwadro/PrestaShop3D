@@ -9,9 +9,9 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2018 Cappasity Inc.
- * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
- */
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
+*/
 
 /**
  * Class CappasityManagerAccount

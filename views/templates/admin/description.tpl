@@ -1,15 +1,15 @@
 {*
-* NOTICE OF LICENSE
-*
-* This file is licenced under the Software License Agreement.
-* With the purchase or the installation of the software in your application
-* you accept the licence agreement.
-*
-* You must not modify, adapt or create derivative works of this source code
-*
-* @author    Cappasity Inc <info@cappasity.com>
-* @copyright 2014-2018 Cappasity Inc.
-* @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    Cappasity Inc <info@cappasity.com>
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
 *}
 <h2>How to create</h2>
 <p>To create a 3D View, you need to create a FREE Cappasity account and download FREE digitizing software Cappasity Easy 3D Scan. The software is easy-to-use, and you no longer have to care about file names, the number of photos, FTP uploading and other IT things. You just use the software to create 3D content and let it take care of everything.</p>

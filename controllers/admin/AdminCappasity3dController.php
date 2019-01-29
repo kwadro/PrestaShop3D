@@ -9,9 +9,9 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2018 Cappasity Inc.
- * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
- */
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
+*/
 
 require dirname(__FILE__) . '/../../vendor/autoload.php';
 
@@ -43,7 +43,7 @@ class AdminCappasity3dController extends ModuleAdminController
 
         $dbManager = new CappasityManagerDatabase(Db::getInstance(), _DB_PREFIX_, _MYSQL_ENGINE_);
 
-        $this->client = new CappasityClient('1.4.12');
+        $this->client = new CappasityClient('1.5.0');
         $this->accountManager = new CappasityManagerAccount($this->client, $this->module);
         $this->dbManager = $dbManager;
         $this->fileManager = new CappasityManagerFile($this->client, $dbManager);
@@ -61,34 +61,34 @@ class AdminCappasity3dController extends ModuleAdminController
     public function handleSync()
     {
         try {
-          error_reporting(0);
-          ignore_user_abort(true);
-          set_time_limit(0);
+            error_reporting(0);
+            ignore_user_abort(true);
+            set_time_limit(0);
         } catch (Exception $e) {
-          $this->client->sentry->captureException($e, array(
-              'level' => 'error',
-              'extra' => array(
-                  'code' => 'E_FAILED_SETTINGS'
-              )
-          ));
+            $this->client->sentry->captureException($e, array(
+                'level' => 'error',
+                'extra' => array(
+                    'code' => 'E_FAILED_SETTINGS'
+                )
+            ));
         }
 
         try {
-          switch ($_SERVER['REQUEST_METHOD']) {
-              case 'GET':
-                  echo Tools::safeOutput($this->handleChallenge());
-                  break;
-              case 'POST':
-                  echo Tools::safeOutput($this->handleProducts());
-                  break;
-          }
+            switch ($_SERVER['REQUEST_METHOD']) {
+                case 'GET':
+                    echo Tools::safeOutput($this->handleChallenge());
+                    break;
+                case 'POST':
+                    echo Tools::safeOutput($this->handleProducts());
+                    break;
+            }
         } catch (Exception $e) {
-          $this->client->sentry->captureException($e, array(
-              'level' => 'error',
-              'extra' => array(
-                  'code' => 'E_FAILED_SYNC'
-              )
-          ));
+            $this->client->sentry->captureException($e, array(
+                'level' => 'error',
+                'extra' => array(
+                    'code' => 'E_FAILED_SYNC'
+                )
+            ));
         }
 
         die();
@@ -145,16 +145,7 @@ class AdminCappasity3dController extends ModuleAdminController
             return '';
         }
 
-        foreach ($products as $product) {
-            if ($product['uploadId'] === false) {
-                $this->fileManager->remove($product['id']);
-            } else {
-                $this->fileManager->update($product['id'], $product['uploadId']);
-            }
-
-            usleep(500);
-        }
-
+        $this->syncManager->sync($products);
         $this->syncManager->removeTask($verifyToken);
 
         return count($products);

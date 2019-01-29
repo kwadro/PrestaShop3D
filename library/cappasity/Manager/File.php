@@ -9,9 +9,9 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2018 Cappasity Inc.
- * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
- */
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
+*/
 
 /**
  * Class CappasityManagerFile
@@ -107,35 +107,12 @@ class CappasityManagerFile
     {
         $productId = (int)$productId;
 
-        $result = $this->db->getCappasityExtra($productId);
+        $result = $this->db->getCappasity(array('productId' => $productId, 'variantId' => null));
 
-        if ($result !== null) {
-            return new CappasityModelFile($result['cappasity_id'], '', '', $params);
+        if (count($result) !== 0) {
+            return new CappasityModelFile($result[0]['cappasity_id'], '', '', $params);
         }
 
         return null;
-    }
-
-    /**
-     * @param $productId
-     * @return mixed
-     */
-    public function remove($productId)
-    {
-        $productId = (int)$productId;
-
-        return $this->db->removeCappasityExtra($productId);
-    }
-
-    /**
-     * @param integer $productId
-     * @param string $cappasityId
-     * @return mixed
-     */
-    public function update($productId, $cappasityId)
-    {
-        $productId = (int)$productId;
-
-        return $this->db->upsertCappasityExtra($productId, $cappasityId);
     }
 }

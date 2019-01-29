@@ -1,15 +1,15 @@
 {*
-* NOTICE OF LICENSE
-*
-* This file is licenced under the Software License Agreement.
-* With the purchase or the installation of the software in your application
-* you accept the licence agreement.
-*
-* You must not modify, adapt or create derivative works of this source code
-*
-* @author    Cappasity Inc <info@cappasity.com>
-* @copyright 2014-2018 Cappasity Inc.
-* @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
+ * NOTICE OF LICENSE
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ * @author    Cappasity Inc <info@cappasity.com>
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
 *}
 {if $is17}
 <style>
@@ -90,7 +90,7 @@
     var listContainer = $('.cappasity-list');
     var url = listContainer.data('url') + '&page=' + page + '&query=' + query;
 
-    listContainer.html('<img src="/img/loader.gif">');
+    listContainer.html('<div><i class="icon-refresh icon-spin"></i></div>');
 
     $.get(url, function (content) {
       listContainer.html(content);

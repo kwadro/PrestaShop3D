@@ -9,9 +9,9 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  * @author    Cappasity Inc <info@cappasity.com>
- * @copyright 2014-2018 Cappasity Inc.
- * @license   http://cappasity.us/eula_modules/  Cappasity EULA for Modules
- */
+ * @copyright 2014-2019 Cappasity Inc.
+ * @license   http://cappasity.com/eula_modules/  Cappasity EULA for Modules
+*/
 
 require dirname(__FILE__) . '/vendor/autoload.php';
 
@@ -62,7 +62,7 @@ class Cappasity3d extends Module
     {
         $this->name = 'cappasity3d';
         $this->tab = 'others';
-        $this->version = '1.4.12';
+        $this->version = '1.5.0';
         $this->author = 'Cappasity Inc';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -170,7 +170,7 @@ class Cappasity3d extends Module
 
             if ($this->syncManager->hasTasks() === true) {
                 $this->context->controller->addJS(
-                    $this->local_path . 'views/js/check-sync.js'
+                    $this->local_path . 'views/js/1548780211.check-sync.js'
                 );
             }
         }
@@ -248,13 +248,17 @@ class Cappasity3d extends Module
           : Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . basename(_PS_ADMIN_DIR_) . '/'
             . $this->context->link->getAdminLink('AdminCappasity3d', false);
 
+        if ($this->validateCallback($callback) === false) {
+            return $this->displayError("'{$callback}' is not valid callback. Probably you try sync on local server.");
+        }
+
         try {
             $token = $this->accountManager->getToken();
             if ($token !== null) {
                 // verify token still active
                 $this->accountManager->info($token);
                 // start sync process
-                $this->syncManager->run($token, $callback, 2000);
+                $this->syncManager->run($token, $callback, 100);
             } else {
                 throw new Exception('Attempted to sync without security token present');
             }
@@ -325,7 +329,11 @@ class Cappasity3d extends Module
         $cacheKey = self::CACHE_KEY . $productId;
 
         if ($cappasityAction === 'remove') {
-            $this->fileManager->remove($productId);
+            $this->dbManager->removeCappasity(array(
+                'product_id' => (int)$productId,
+                'cappasity_id' => $cappasityId,
+            ));
+
             Cache::clean($cacheKey);
 
             return;
@@ -333,7 +341,11 @@ class Cappasity3d extends Module
 
         // if id exists update table
         if ($cappasityId !== '') {
-            $result = $this->fileManager->update($productId, $cappasityId);
+            $result = $this->dbManager->upsertCappasity(
+                // @TODO hanlde variants from picker here
+                array('product_id' => $productId, 'variant_id' => 0),
+                array('cappasity_id' => $cappasityId, 'from_pick' => 1)
+            );
             Cache::store($cacheKey, true);
 
             return $result;
@@ -376,7 +388,12 @@ class Cappasity3d extends Module
             return true;
         }
 
-        $result = $this->fileManager->update($productId, $model['id']);
+        $result = $this->dbManager->upsertCappasity(
+            // @TODO hanlde variants from picker here
+            array('product_id' => $productId, 'variant_id' => 0),
+            array('cappasity_id' => $model['id'], 'from_hook' => 1)
+        );
+
         Cache::store($cacheKey, true);
 
         return $result;
@@ -387,15 +404,15 @@ class Cappasity3d extends Module
      */
     public function hookHeader()
     {
-        $this->context->controller->addCSS($this->local_path . 'views/css/cappasity.css');
+        $this->context->controller->addCSS($this->local_path . 'views/css/1548780211.cappasity.css');
 
         if ($this->is17() === true) {
-            $this->context->controller->addJS($this->local_path . 'views/js/cappasity17.js');
+            $this->context->controller->addJS($this->local_path . 'views/js/1548780211.cappasity17.js');
         } else {
-            $this->context->controller->addJS($this->local_path . 'views/js/cappasity16.js');
+            $this->context->controller->addJS($this->local_path . 'views/js/1548780211.cappasity16.js');
         }
 
-        return $this->getEmbedCode();
+        return $this->getPlayerSettingDiv();
     }
 
     /**
@@ -403,40 +420,41 @@ class Cappasity3d extends Module
      */
     public function hookDisplayAfterProductThumbs()
     {
-        // handle quickview only
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return '';
         }
 
-        return $this->getEmbedCode()
-            . '<script>'
-            . Tools::file_get_contents($this->local_path . 'views/js/cappasity17.js')
-            . '</script>'
-            . '<style>'
-            . Tools::file_get_contents($this->local_path . 'views/css/cappasity.css')
-            . '</style>';
+        if (Tools::getValue('action', null) === 'quickview') {
+            return $this->getPlayerSettingDiv()
+                . '<script>'
+                . Tools::file_get_contents($this->local_path . 'views/js/1548780211.cappasity17.js')
+                . '</script>'
+                . '<style>'
+                . Tools::file_get_contents($this->local_path . 'views/css/1548780211.cappasity.css')
+                . '</style>';
+        }
+
+        if (Tools::getValue('action', null) === 'refresh') {
+            return '<script>'
+              . 'if (window.cappasity && typeof window.cappasity.run === \'function\') {'
+              . '  window.cappasity.run(); '
+              . '}'
+              . '</script>';
+        }
+
+        return '';
     }
 
     /**
      * @return string
      */
-    public function getEmbedCode()
+    public function getPlayerSettingDiv()
     {
-        $productId = Tools::getValue(self::REQUEST_PARAM_PRODUCT_ID, null);
+        $this->context->smarty->assign(
+            array('playerSettings' => $this->playerManager->getSettings())
+        );
 
-        if ($productId === null) {
-            return '';
-        }
-
-        $currentModel = $this->fileManager->getCurrent($productId, $this->playerManager->getSettings());
-
-        if ($currentModel === null) {
-            return '';
-        }
-
-        $this->context->smarty->assign(array('model' => $currentModel));
-
-        return $this->context->smarty->fetch($this->local_path . 'views/templates/front/embed.tpl');
+        return $this->context->smarty->fetch($this->local_path . 'views/templates/front/player-settings.tpl');
     }
 
     /**
@@ -516,5 +534,16 @@ class Cappasity3d extends Module
     public function isGTE171()
     {
         return $this->is17() && strpos(_PS_VERSION_, '1.7.0') === false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function validateCallback($callback)
+    {
+        // https://gist.github.com/dperini/729294
+        $re = '_^(?:(?:https?|ftp)://)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\x{00a1}-\x{ffff}0-9]-*)*[a-z\x{00a1}-\x{ffff}0-9]+)(?:\.(?:[a-z\x{00a1}-\x{ffff}0-9]-*)*[a-z\x{00a1}-\x{ffff}0-9]+)*(?:\.(?:[a-z\x{00a1}-\x{ffff}]{2,}))\.?)(?::\d{2,5})?(?:[/?#]\S*)?$_iuS';
+
+        return preg_match($re, $callback) === 1;
     }
 }
